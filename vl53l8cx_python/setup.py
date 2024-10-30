@@ -7,14 +7,14 @@ with open("README.md", "r") as fh:
 
 
 setup(
-    name="VL53L5CX",
+    name="VL53L8CX",
     version="1.0.1",
-    author="Daniel Sendula",
-    description="Python native implementation of VL53L5CX ultra light driver code",
+    author="Rhinos",
+    description="Python native implementation of VL53L8CX ultra light driver code",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/Abstract-Horizon/vl53l5cx_python",
-    packages=['vl53l5cx'],
+    packages=['vl53l8cx'],
 
     classifiers=[
         "Programming Language :: Python :: 3",

@@ -1,9 +1,8 @@
 import time
 
 from typing import List
-from api import *
-from buffers import Buffers
-
+from .api import *
+from .buffers import Buffers
 
 DEBUG_IO = False
 DEBUG_LOW_LEVEL_LOGIC = False
@@ -167,7 +166,7 @@ class VL53L8CX:
     def __init__(
             self,
             i2c_bus=None,
-            bus_id: int = 0, # changed 1 to 0 by jaeho 24.10.25 
+            bus_id: int = 1,
             use_raw_format: bool = False,
             nb_target_per_zone: int = 1,
             disable_ambient_per_spad: bool = False,
@@ -617,6 +616,8 @@ class VL53L8CX:
         self.default_xtalk = self.buffers.VL53L8CX_DEFAULT_XTALK
         self.default_configuration = self.buffers.VL53L8CX_DEFAULT_CONFIGURATION
 
+        print(f"init 1")
+
         # reboot sequence
         self.wr_byte(0x7fff, 0x00)
         self.wr_byte(0x0009, 0x04)
@@ -625,6 +626,8 @@ class VL53L8CX:
         # tmp = self.rd_byte(0x7FFF)
         tmp = self.rd_byte(0x7FFF)
         self.wr_byte(0x000C, 0x01)
+
+        print(f"init 2")
 
         self.wr_byte(0x0101, 0x00)
         self.wr_byte(0x0102, 0x00)
