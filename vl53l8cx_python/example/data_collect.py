@@ -50,21 +50,18 @@ class TOFSensor:
                         y_coord = round(float(buf[w, h, 1]), 5)
                         z_coord = round(float(buf[w, h, 2]), 5)
 
-                        print(f"Zone : {i: >3d}, "
-                              f"Status : {status: >3d}, "
-                              f"Distance : {distance: >4.0f} mm, "
-                              f"X: {x_coord}, "
-                              f"Y: {y_coord}, "
-                              f"Z: {z_coord}")
+                        # print(f"Zone : {i: >3d}, "
+                        #       f"Status : {status: >3d}, "
+                        #       f"Distance : {distance: >4.0f} mm, "
+                        #       f"X: {x_coord}, "
+                        #       f"Y: {y_coord}, "
+                        #       f"Z: {z_coord}")
 
                         data_entry = {
                             "data no": loop,
                             "zone": i,
                             "Status": status,  # Status indicating the measurement validity (5 & 9 means ranging OK)
-                            "Distance(mm)": distance,
-                            "X": x_coord,
-                            "Y": y_coord,
-                            "Z": z_coord
+                            "Distance(mm)": distance                            
                         }
 
                         json.dump(data_entry, json_file)
