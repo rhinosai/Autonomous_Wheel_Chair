@@ -6,7 +6,7 @@ import json
 
 class TOFSensor:
     def __init__(self, resolution=VL53L8CX_RESOLUTION_8X8):
-        self.driver = VL53L8CX()
+        self.driver = VL53L8CX(bus_id=0)
         self.resolution = resolution
         self.res = int(np.sqrt(resolution)) 
         self._initialize_driver()
