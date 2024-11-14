@@ -5,15 +5,17 @@ from .api import *
 import json
 
 class TOFSensor:
-    def __init__(self, resolution=VL53L8CX_RESOLUTION_8X8):
+    def __init__(self, resolution=VL53L8CX_RESOLUTION_8X8, frequency = 15):
         self.driver = VL53L8CX(bus_id=0)
         self.resolution = resolution
+        self.frequency = frequency
         self.res = int(np.sqrt(resolution)) 
         self._initialize_driver()
 
     def _initialize_driver(self):
         self.driver.init()
         self.driver.set_resolution(self.resolution)
+        self.driver.set_ranging_frequency_hz(self.frequency)
         self.driver.start_ranging()
 
     def get_coord(self):
