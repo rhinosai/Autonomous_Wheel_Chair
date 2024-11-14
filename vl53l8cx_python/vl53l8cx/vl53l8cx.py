@@ -1148,6 +1148,7 @@ class VL53L8CX:
 
     def get_ranging_frequency_hz(self) -> int:
         self.dci_read_data(self.temp_buffer, VL53L8CX_DCI_FREQ_HZ, 4)
+        print(f"frequency:{self.temp_buffer[0x01]}hz")
         return self.temp_buffer[0x01]
 
     def set_ranging_frequency_hz(self, frequency_hz: int) -> None:
