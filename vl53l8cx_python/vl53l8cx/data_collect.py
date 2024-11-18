@@ -73,5 +73,5 @@ class TOFSensor:
 
 if __name__ == '__main__':
     sensor = TOFSensor(resolution=VL53L8CX_RESOLUTION_8X8)
-    sensor.run(num_data=1)
+    sensor.run(num_data=10)
     
