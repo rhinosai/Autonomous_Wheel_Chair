@@ -844,6 +844,7 @@ class VL53L8CX:
         cmd = [0x00, 0x03, 0x00, 0x00]
 
         resolution = self.get_resolution()
+        frequency = self.get_ranging_frequency_hz()
         self.data_read_size = 0
         self.streamcount = 255
 
@@ -1085,7 +1086,7 @@ class VL53L8CX:
 
             for i in range((VL53L8CX_RESOLUTION_8X8 * self.nb_target_per_zone)):
                 if not self.disable_distance_mm:
-                    p_results.distance_mm[i] /= 4
+                    p_results.distance_mm[i] /= 2
                 if not self.disable_reflectance_percent:
                     p_results.distance_mm[i] /= 2
                 if not self.disable_range_sigma_mm:
