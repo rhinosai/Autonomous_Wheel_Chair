@@ -1086,9 +1086,9 @@ class VL53L8CX:
 
             for i in range((VL53L8CX_RESOLUTION_8X8 * self.nb_target_per_zone)):
                 if not self.disable_distance_mm:
-                    p_results.distance_mm[i] /= 2
+                    p_results.distance_mm[i] /= 4
                 if not self.disable_reflectance_percent:
-                    p_results.distance_mm[i] /= 2
+                    p_results.reflectance[i] /= 2
                 if not self.disable_range_sigma_mm:
                     p_results.range_sigma_mm[i] /= 128
                 if not self.disable_signal_per_spad:
