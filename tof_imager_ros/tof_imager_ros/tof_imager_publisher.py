@@ -22,7 +22,7 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.qos import qos_profile_sensor_data
 from std_msgs.msg import Header
 from sensor_msgs.msg import PointCloud2, PointField
-from vl53l8cx.vl53l8cx import VL53L8CX as ToFImager, VL53L5CXResultsData as ToFImagerResults
+from vl53l8cx.vl53l8cx import VL53L8CX as ToFImager, VL53L8CXResultsData as ToFImagerResults
 
 class ToFImagerPublisher(Node):
     def __init__(self, node_name='tof_imager'):
@@ -34,6 +34,7 @@ class ToFImagerPublisher(Node):
         self.declare_parameters(
             namespace='',
             parameters=[
+                ('bus_id', 1),
                 ('frame_id', 'tof_frame'),
                 ('resolution', 8),
                 ('mode', 1), # 1 is continuous, 3 is autonomous
@@ -95,7 +96,7 @@ class ToFImagerPublisher(Node):
 
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         """Configure the ToF imager sensor"""
-        self.sensor = ToFImager()
+        self.sensor = ToFImager(bus_id = self.get_parameter('bus_id').value)
         self.sensor.init()
 
         if self.mode not in (1, 3):
