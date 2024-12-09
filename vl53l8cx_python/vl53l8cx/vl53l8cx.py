@@ -7,9 +7,9 @@ import ctypes
 
 DEBUG_IO = False
 DEBUG_LOW_LEVEL_LOGIC = False
-DEBUG_LOW_LEVEL_LOGIC_START_RANGING = True
+DEBUG_LOW_LEVEL_LOGIC_START_RANGING = False
 DEBUG_LOW_LEVEL_LOGIC_SEND_OFFSET_DATA = False
-DEBUG_LOW_LEVEL_LOGIC_GET_RANGING_DATA = True
+DEBUG_LOW_LEVEL_LOGIC_GET_RANGING_DATA = False
 DEFENSIVE_CODE = False
 PRINT_SIZE_MAX = 1024
 
@@ -1082,14 +1082,8 @@ class VL53L8CX:
 
             bh_ptr_idx = header.bits.idx
 
-            # bh_ptr_type = self.temp_buffer[i] & 0x0f
-            # bh_ptr_size = (self.temp_buffer[i] >> 4) & 0xf | (self.temp_buffer[i + 1] << 4)
-            # if 0x1 < bh_ptr_type < 0xd:
-            #     msize = bh_ptr_type * bh_ptr_size
-            # else:
-            #     msize = bh_ptr_size
-
-            # bh_ptr_idx = self.temp_buffer[i + 2] + self.temp_buffer[i + 3] * 256
+            if DEBUG_LOW_LEVEL_LOGIC_GET_RANGING_DATA:
+                print(f"bh_ptr_type={bh_ptr_type}, bh_ptr_size={bh_ptr_size}, bh_ptr_idx={bh_ptr_idx}, msize={msize}")
 
             if bh_ptr_idx == self.VL53L8CX_METADATA_IDX:
                 p_results.silicon_temp_degc = self.temp_buffer[i + 12]
