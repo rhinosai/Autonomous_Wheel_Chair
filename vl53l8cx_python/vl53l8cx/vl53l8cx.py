@@ -905,6 +905,7 @@ class VL53L8CX:
         if DEBUG_LOW_LEVEL_LOGIC_START_RANGING:
             print(f"vl53l8cx_start_ranging:    output_bh_enable[0]={output_bh_enable[0]:0{8}x}")
 
+        header = BlockHeader()
         # Update data size
         total_output_len = len(output)
         for i in range(total_output_len):
@@ -913,8 +914,10 @@ class VL53L8CX:
                     print(f"vl53l8cx_start_ranging:    continue output[{i}]={output[i]:0{8}x}, output_bh_enable[{i // DIVIDE_FACTOR}]={output_bh_enable[i // DIVIDE_FACTOR]:0{8}x}")
                 continue
 
-            bh_ptr_type = output[i] & 0x0f
-            bh_ptr_idx = (output[i] >> 16) & 0xffff
+            header.bytes = output[i]
+            bh_ptr_type = header.bits.type & 0x0f
+            bh_ptr_idx = header.bits.idx
+            bh_ptr_size = header.bits.size
             if DEBUG_LOW_LEVEL_LOGIC_START_RANGING:
                 print(f"vl53l8cx_start_ranging:    output[{i}]={output[i]:0{8}x}, bh_ptr_type={bh_ptr_type:0{4}x} bh_ptr_idx={bh_ptr_idx:0{8}x}")
 
@@ -928,10 +931,10 @@ class VL53L8CX:
                 output[i] = output[i] & 0xffff000f | (bh_ptr_size << 4) & 0xfff0
 
                 self.data_read_size += bh_ptr_type * bh_ptr_size
+
                 if DEBUG_LOW_LEVEL_LOGIC_START_RANGING:
                     print(f"vl53l8cx_start_ranging:    output[{i}]={output[i]:0{8}x}, data_read_size={self.data_read_size}")
             else:
-                bh_ptr_size = (output[i] >> 4) & 0xfff
                 self.data_read_size += bh_ptr_size
             self.data_read_size += 4
             if DEBUG_LOW_LEVEL_LOGIC_START_RANGING:
