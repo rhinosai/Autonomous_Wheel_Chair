@@ -35,6 +35,8 @@ driver.start_ranging()
 previous_time = 0
 loop = 0
 start_time = time.time()
+delay_ms = 100
+print(f"Delay : {delay_ms:.1f}ms")
 while True:
     if driver.check_data_ready():
         print(f"Loop : {loop: >3d} ({time.time() - start_time:.1f}s)")
@@ -59,9 +61,11 @@ while True:
 
         previous_time = now
         loop += 1
-
+        time.sleep(delay_ms/1000)
+    else :
+        print(f"data is not ready : {loop: >3d} ({time.time() - start_time:.1f}s)")
+        time.sleep(1000)
     
-
-    time.sleep(0.005)
+#    time.sleep(delay_ms/1000)
 
 driver.stop_ranging()
