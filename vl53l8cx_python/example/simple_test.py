@@ -19,6 +19,17 @@ print(f"Initialised ({time.time() - t:.1f}s)")
 
 
 # Ranging:
+
+res = 8
+frequency = 15
+mode = 1
+
+driver.set_resolution(res*res)
+# frequency needs to be set after setting the resolution
+frequency = min(frequency, 15) if res == 8 else min(frequency, 60)
+driver.set_ranging_frequency_hz(frequency)
+driver.set_ranging_mode(mode)
+
 driver.start_ranging()
 
 previous_time = 0
@@ -39,7 +50,7 @@ while True:
         else:
             print(f"Print data no : {driver.streamcount: >3d}")
 
-        for i in range(16):
+        for i in range(res*res):
             print(f"Zone : {i: >3d}, "
                   f"Status : {ranging_data.target_status[driver.nb_target_per_zone * i]: >3d}, "
                   f"Distance : {ranging_data.distance_mm[driver.nb_target_per_zone * i]: >4.0f} mm")
