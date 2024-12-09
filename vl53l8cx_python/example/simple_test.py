@@ -1,8 +1,8 @@
 import time
 
-from vl53l8cx import VL53L8CX
+from vl53l8cx.vl53l8cx import VL53L8CX
 
-driver = VL53L8CX()
+driver = VL53L8CX(bus_id=0)
 
 alive = driver.is_alive()
 if not alive:
@@ -23,8 +23,10 @@ driver.start_ranging()
 
 previous_time = 0
 loop = 0
-while loop < 10:
+start_time = time.time()
+while True:
     if driver.check_data_ready():
+        print(f"Loop : {loop: >3d} ({time.time() - start_time:.1f}s)")
         ranging_data = driver.get_ranging_data()
 
         # As the sensor is set in 4x4 mode by default, we have a total 
@@ -47,4 +49,8 @@ while loop < 10:
         previous_time = now
         loop += 1
 
+    
+
     time.sleep(0.005)
+
+driver.stop_ranging()

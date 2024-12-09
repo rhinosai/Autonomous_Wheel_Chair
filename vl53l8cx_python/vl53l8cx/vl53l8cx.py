@@ -3,6 +3,7 @@ import time
 from typing import List
 from .api import *
 from .buffers import Buffers
+import ctypes
 
 DEBUG_IO = False
 DEBUG_LOW_LEVEL_LOGIC = False
@@ -82,6 +83,18 @@ def to_int_array(destination: List[int], source: List[int], source_index: int, s
         d = (d - 65536) if d >= 32768 else d
         destination[i] = d
 
+class BlockHeaderBits(ctypes.LittleEndianStructure):
+    _fields_ = [
+        ("type", ctypes.c_uint32, 4),
+        ("size", ctypes.c_uint32, 12),
+        ("idx", ctypes.c_uint32, 16),
+    ]
+
+class BlockHeader(ctypes.Union):
+    _fields_ = [
+        ("bytes", ctypes.c_uint32),
+        ("bits", BlockHeaderBits),
+    ]                
 
 class VL53L8CXException(Exception):
     def __init__(self, status: int) -> None:
@@ -213,10 +226,10 @@ class VL53L8CX:
         else:
             self.L5CX_SPS_SIZE = ((256 * nb_target_per_zone) + 4)
 
-        if disable_range_sigma_mm is None:
-            self.L5CX_SIGR_SIZE = ((128 * nb_target_per_zone) + 4)
-        else:
+        if disable_range_sigma_mm:
             self.L5CX_SIGR_SIZE = 0
+        else:
+            self.L5CX_SIGR_SIZE = ((128 * nb_target_per_zone) + 4)
 
         if disable_distance_mm:
             self.L5CX_DIST_SIZE = 0
@@ -241,7 +254,7 @@ class VL53L8CX:
         self.VL53L8CX_MAX_RESULTS_SIZE = (40
                                           + self.L5CX_AMB_SIZE + self.L5CX_SPAD_SIZE + self.L5CX_NTAR_SIZE + self.L5CX_SPS_SIZE
                                           + self.L5CX_SIGR_SIZE + self.L5CX_DIST_SIZE + self.L5CX_RFLEST_SIZE + self.L5CX_STA_SIZE
-                                          + self.L5CX_MOT_SIZE + 8)
+                                          + self.L5CX_MOT_SIZE + 20)
 
         if self.VL53L8CX_MAX_RESULTS_SIZE < 1024:
             self.VL53L8CX_TEMPORARY_BUFFER_SIZE = 1024
@@ -1037,21 +1050,42 @@ class VL53L8CX:
         if DEBUG_LOW_LEVEL_LOGIC_GET_RANGING_DATA:
             print(f"vl53l8cx_get_ranging_data: data_read_size={self.data_read_size}")
         self.rd_multi(0x0, self.temp_buffer, self.data_read_size)
+        
+        for i in range(0, self.data_read_size, 10):
+            line = self.temp_buffer[i:min(i + 10, self.data_read_size)]
+            for byte in line:
+                print(f"0x{byte:02x},", end=" ")  # 2자리 hex로 출력
+            print()  # 줄 바꿈
+
         self.streamcount = self.temp_buffer[0]
         self.swap_buffer(self.temp_buffer, self.data_read_size)
         if DEBUG_LOW_LEVEL_LOGIC_GET_RANGING_DATA:
             print(f"vl53l8cx_get_ranging_data: streamcount={self.streamcount}")
 
         # Start conversion at position 16 to avoid headers
-        for i in range(16, self.data_read_size, 4):
-            bh_ptr_type = self.temp_buffer[i] & 0x0f
-            bh_ptr_size = (self.temp_buffer[i] >> 4) & 0xf | (self.temp_buffer[i + 1] << 4)
+        i = 16  # Start parsing after headers
+        while i < self.data_read_size:
+            header = BlockHeader()
+            header.bytes = int.from_bytes(self.temp_buffer[i:i+4], byteorder='little')            
+
+            bh_ptr_type = header.bits.type & 0x0f
+            bh_ptr_size = header.bits.size
+
             if 0x1 < bh_ptr_type < 0xd:
                 msize = bh_ptr_type * bh_ptr_size
             else:
                 msize = bh_ptr_size
 
-            bh_ptr_idx = self.temp_buffer[i + 2] + self.temp_buffer[i + 3] * 256
+            bh_ptr_idx = header.bits.idx
+
+            # bh_ptr_type = self.temp_buffer[i] & 0x0f
+            # bh_ptr_size = (self.temp_buffer[i] >> 4) & 0xf | (self.temp_buffer[i + 1] << 4)
+            # if 0x1 < bh_ptr_type < 0xd:
+            #     msize = bh_ptr_type * bh_ptr_size
+            # else:
+            #     msize = bh_ptr_size
+
+            # bh_ptr_idx = self.temp_buffer[i + 2] + self.temp_buffer[i + 3] * 256
 
             if bh_ptr_idx == self.VL53L8CX_METADATA_IDX:
                 p_results.silicon_temp_degc = self.temp_buffer[i + 12]
@@ -1076,7 +1110,7 @@ class VL53L8CX:
                 if DEBUG_LOW_LEVEL_LOGIC_GET_RANGING_DATA:
                     print(f"vl53l8cx_get_ranging_data: i+4={i + 4} msize={msize}, len(self.temp_buffer)={len(self.temp_buffer)}")
                 p_results.update_motion_indicator(self.temp_buffer, i + 4, msize)
-            i += msize
+            i += (msize + 4)
 
         if not self.use_raw_format:
             # Convert data into their real format */
