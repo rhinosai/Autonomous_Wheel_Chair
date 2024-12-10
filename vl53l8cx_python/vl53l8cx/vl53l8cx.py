@@ -10,6 +10,7 @@ DEBUG_LOW_LEVEL_LOGIC = False
 DEBUG_LOW_LEVEL_LOGIC_START_RANGING = False
 DEBUG_LOW_LEVEL_LOGIC_SEND_OFFSET_DATA = False
 DEBUG_LOW_LEVEL_LOGIC_GET_RANGING_DATA = False
+DEBUG_LOW_LEVEL_LOGIC_GET_RANGING_DATA_ALL = False
 DEFENSIVE_CODE = False
 PRINT_SIZE_MAX = 1024
 
@@ -1069,7 +1070,7 @@ class VL53L8CX:
             print(f"vl53l8cx_get_ranging_data: data_read_size={self.data_read_size}")
         self.rd_multi(0x0, self.temp_buffer, self.data_read_size)
         
-        if DEBUG_LOW_LEVEL_LOGIC_GET_RANGING_DATA:
+        if DEBUG_LOW_LEVEL_LOGIC_GET_RANGING_DATA_ALL:
             for i in range(0, self.data_read_size, 10):
                 line = self.temp_buffer[i:min(i + 10, self.data_read_size)]
                 for byte in line:
@@ -1078,7 +1079,7 @@ class VL53L8CX:
 
         self.streamcount = self.temp_buffer[0]
         self.swap_buffer(self.temp_buffer, self.data_read_size)
-        print(f"vl53l8cx_get_ranging_data: streamcount={self.streamcount}")
+        # print(f"vl53l8cx_get_ranging_data: streamcount={self.streamcount}")
 
         if DEBUG_LOW_LEVEL_LOGIC_GET_RANGING_DATA:
             print(f"vl53l8cx_get_ranging_data: streamcount={self.streamcount}")
