@@ -13,7 +13,7 @@ DEBUG_LOW_LEVEL_LOGIC_GET_RANGING_DATA = False
 DEFENSIVE_CODE = False
 PRINT_SIZE_MAX = 1024
 
-VL53L8CX_COMMS_CHUNK_SIZE = 4096  # Mark's original value was 1024, but 4096 works as well
+VL53L8CX_COMMS_CHUNK_SIZE = 1024  # Mark's original value was 1024, but 4096 works as well
 
 
 def to_long_uint(data: List[int], i: int) -> int:
@@ -350,30 +350,40 @@ class VL53L8CX:
             buffer[i + 2] = t
 
     def rd_multi(self, addr: int, buffer: List[int], size: int) -> None:
-        write_addr = self.i2c_msg.write(self.i2c_address, [addr >> 8 & 0xff, addr & 0xff])
-        read_data = self.i2c_msg.read(self.i2c_address, size)
+        position = 0
+        if DEBUG_IO:
+            print(f"rd_multi size={size}")
+        while position < size:
+            data_size = VL53L8CX_COMMS_CHUNK_SIZE if size - position > VL53L8CX_COMMS_CHUNK_SIZE else size - position
 
-        self._i2c_bus.i2c_rdwr(write_addr, read_data)
+            write_addr = self.i2c_msg.write(self.i2c_address, [(addr + position)>> 8 & 0xff, (addr + position) & 0xff])
+            read_data = self.i2c_msg.read(self.i2c_address, data_size)
 
-        read_size = len(read_data)
+            self._i2c_bus.i2c_rdwr(write_addr, read_data)
 
-        if read_size > 0:
-            read_buffer = list(read_data)
-            buffer[:read_size] = read_buffer[:read_size]
+            read_size = len(read_data)
             if DEBUG_IO:
-                print(f"rd_multi addr={addr:#0{6}x}, len={{}}, size={size}. read_size={read_size}, buf_len= read=[", end="")
-                print_size = read_size
-                if print_size > PRINT_SIZE_MAX:
-                    print_size = PRINT_SIZE_MAX
-                for i in range(print_size):
-                    if i > 0:
-                        print(", ", end="")
-                    print(f"{read_buffer[i]:#0{2}x}", end="")
-                if print_size != read_size:
-                    print(", ...", end="")
-                print("]")
-        else:
-            raise Exception("Couldn't read any bytes")
+                print(f"rd_multi data_size={data_size}. read_size={read_size}")
+
+            if read_size > 0:
+                read_buffer = list(read_data)
+                buffer[position:read_size] = read_buffer[:read_size]
+                if DEBUG_IO:
+                    print(f"rd_multi addr={addr:#0{6}x}, len={{}}, size={size}. read_size={read_size}, buf_len= read=[", end="")
+                    print_size = read_size
+                    if print_size > PRINT_SIZE_MAX:
+                        print_size = PRINT_SIZE_MAX
+                    for i in range(print_size):
+                        if i > 0:
+                            print(", ", end="")
+                        print(f"{read_buffer[i]:#0{2}x}", end="")
+                    if print_size != read_size:
+                        print(", ...", end="")
+                    print("]")
+
+                position += read_size    
+            else:
+                raise Exception("Couldn't read any bytes")
 
     def wr_multi(self, addr: int, buffer: List[int], size: int) -> None:
         position = 0
@@ -381,8 +391,8 @@ class VL53L8CX:
             data_size = VL53L8CX_COMMS_CHUNK_SIZE - 2 if size - position > VL53L8CX_COMMS_CHUNK_SIZE - 2 else size - position
 
             buf = [0] * (data_size + 2)
-            buf[0] = addr >> 8
-            buf[1] = addr & 0xff
+            buf[0] = (addr + position) >> 8
+            buf[1] = (addr + position) & 0xff
             buf[2:] = buffer[position:position + data_size]
             write = self.i2c_msg.write(self.i2c_address, buf)
             self._i2c_bus.i2c_rdwr(write)
@@ -399,7 +409,7 @@ class VL53L8CX:
                 if print_size != data_size:
                     print(", ...", end="")
                 print("]")
-            addr += data_size
+            # addr += data_size
             position += data_size
 
     def rd_byte(self, addr: int) -> int:
@@ -752,7 +762,7 @@ class VL53L8CX:
         # self.rd_byte(0x7fff)
         self.wr_byte(0x0C, 0x00)
         self.wr_byte(0x0B, 0x01)
-        self._poll_for_answer(1, 0, 0x06, 0xff, 0x00)
+        # self._poll_for_answer(1, 0, 0x06, 0xff, 0x00)
         self._poll_for_mcu_boot()
         self.wr_byte(0x7fff, 0x02)
 
@@ -1037,14 +1047,19 @@ class VL53L8CX:
                 and ((self.temp_buffer[2] & 0x5) == 0x5)
                 and ((self.temp_buffer[3] & 0x10) == 0x10)):
             self.streamcount = self.temp_buffer[0]
+
+            if DEBUG_LOW_LEVEL_LOGIC:
+                print(f"vl53l8cx_check_data_ready: streamcount={self.streamcount}")
+
             return True
+
+        if DEBUG_LOW_LEVEL_LOGIC:
+            print(f"vl53l8cx_check_data_ready: buf={', '.join(f'{x:02x}' for x in self.temp_buffer[:4])}, streamcount={self.streamcount}")
 
         if self.temp_buffer[3] & 0x80 != 0:
             # Return GO2 error status
             raise VL53L8CXException(self.temp_buffer[2])
 
-        if DEBUG_LOW_LEVEL_LOGIC:
-            print(f"vl53l8cx_check_data_ready: buf={self.temp_buffer[:4]}, streamcount={self.streamcount}")
         return False
 
     def get_ranging_data(self) -> VL53L8CXResultsData:
@@ -1063,6 +1078,8 @@ class VL53L8CX:
 
         self.streamcount = self.temp_buffer[0]
         self.swap_buffer(self.temp_buffer, self.data_read_size)
+        print(f"vl53l8cx_get_ranging_data: streamcount={self.streamcount}")
+
         if DEBUG_LOW_LEVEL_LOGIC_GET_RANGING_DATA:
             print(f"vl53l8cx_get_ranging_data: streamcount={self.streamcount}")
 
