@@ -97,6 +97,26 @@ class BlockHeader(ctypes.Union):
         ("bits", BlockHeaderBits),
     ]                
 
+class MotionIndicator(ctypes.Structure):
+    _fields_ = [
+        ("global_indicator_1", ctypes.c_uint32),
+        ("global_indicator_2", ctypes.c_uint32),
+        ("status", ctypes.c_uint8),
+        ("nb_of_detected_aggregates", ctypes.c_uint8),
+        ("nb_of_aggregates", ctypes.c_uint8),
+        ("spare", ctypes.c_uint8),
+        ("motion", ctypes.c_uint32 * 32)
+    ]
+    _defaults_ = {
+        "global_indicator_1": 0,
+        "global_indicator_2": 0,
+        "status": 0,
+        "nb_of_detected_aggregates": 0,
+        "nb_of_aggregates": 0,
+        "spare": 0,
+        "motion": (0,) * 32,  # 32개의 0으로 채워진 튜플
+    }    
+
 class VL53L8CXException(Exception):
     def __init__(self, status: int) -> None:
         super().__init__(status)
@@ -133,47 +153,49 @@ class VL53L8CXResultsData:
 
         # Motion detector results - originally # ifndef VL53L8CX_DISABLE_MOTION_INDICATOR
         # This was originally motion_indicator structure {
-        self.global_indicator_1: int = 0
-        self.global_indicator_2: int = 0
-        self.status: int = 0
-        self.nb_of_detected_aggregates: int = 0
-        self.nb_of_aggregates: int = 0
-        self.spare: int = 0
-        self.motion = [0] * 32
+        # self.global_indicator_1: int = 0
+        # self.global_indicator_2: int = 0
+        # self.status: int = 0
+        # self.nb_of_detected_aggregates: int = 0
+        # self.nb_of_aggregates: int = 0
+        # self.spare: int = 0
+        # self.motion = [0] * 32
         # } motion_indicator
 
-    def update_motion_indicator(self, data: List[int], ptr: int, size: int) -> None:
-        if size >= 4:
-            self.global_indicator_1 = to_long_uint(data, ptr)
-            size -= 4
-            ptr += 4
-        if size >= 4:
-            self.global_indicator_2 = to_long_uint(data, ptr)
-            size -= 4
-            ptr += 4
-        if size >= 1:
-            self.status = data[ptr]
-            size -= 1
-            ptr += 1
-        if size >= 1:
-            self.nb_of_detected_aggregates = data[ptr]
-            size -= 1
-            ptr += 1
-        if size >= 1:
-            self.nb_of_aggregates = data[ptr]
-            size -= 1
-            ptr += 1
-        if size >= 1:
-            self.spare = data[ptr]
-            size -= 1
-            ptr += 1
-        if size >= 0:
-            i = 0
-            while size >= 4:
-                self.motion[i] = to_long_uint(data, ptr)
-                i += 1
-                ptr += 4
-                size -= 4
+        self.motion_indicator: MotionIndicator = MotionIndicator()
+
+    # def update_motion_indicator(self, data: List[int], ptr: int, size: int) -> None:
+    #     if size >= 4:
+    #         self.global_indicator_1 = to_long_uint(data, ptr)
+    #         size -= 4
+    #         ptr += 4
+    #     if size >= 4:
+    #         self.global_indicator_2 = to_long_uint(data, ptr)
+    #         size -= 4
+    #         ptr += 4
+    #     if size >= 1:
+    #         self.status = data[ptr]
+    #         size -= 1
+    #         ptr += 1
+    #     if size >= 1:
+    #         self.nb_of_detected_aggregates = data[ptr]
+    #         size -= 1
+    #         ptr += 1
+    #     if size >= 1:
+    #         self.nb_of_aggregates = data[ptr]
+    #         size -= 1
+    #         ptr += 1
+    #     if size >= 1:
+    #         self.spare = data[ptr]
+    #         size -= 1
+    #         ptr += 1
+    #     if size >= 0:
+    #         i = 0
+    #         while size >= 4:
+    #             self.motion[i] = to_long_uint(data, ptr)
+    #             i += 1
+    #             ptr += 4
+    #             size -= 4
 
 
 class VL53L8CX:
@@ -1122,10 +1144,31 @@ class VL53L8CX:
             elif not self.disable_target_status and bh_ptr_idx == self.VL53L8CX_TARGET_STATUS_IDX:
                 p_results.target_status[:msize] = self.temp_buffer[i + 4: i + 4 + msize]
             elif not self.disable_motion_indicator and bh_ptr_idx == self.VL53L8CX_MOTION_DETEC_IDX:
+                motion_bytes = bytes(self.temp_buffer[i + 4:i + 4 + msize])
+                motion_indicator = MotionIndicator()
+
+                copy_size = min(len(motion_bytes), ctypes.sizeof(motion_indicator))
+                ctypes.memmove(ctypes.addressof(motion_indicator), motion_bytes, copy_size)
+                p_results.motion_indicator = motion_indicator
 
                 if DEBUG_LOW_LEVEL_LOGIC_GET_RANGING_DATA:
-                    print(f"vl53l8cx_get_ranging_data: i+4={i + 4} msize={msize}, len(self.temp_buffer)={len(self.temp_buffer)}")
-                p_results.update_motion_indicator(self.temp_buffer, i + 4, msize)
+                    print(f'global_indicator_1: {p_results.motion_indicator.global_indicator_1:08x}') # 08x 형식 지정
+                    print(f'global_indicator_2: {p_results.motion_indicator.global_indicator_2:08x}')
+                    print(f'status: {p_results.motion_indicator.status:02x}') # 02x 형식 지정
+                    print(f'nb_of_detected_aggregates: {p_results.motion_indicator.nb_of_detected_aggregates:02x}') # 02x 형식 지정
+                    print(f'nb_of_aggregates: {p_results.motion_indicator.nb_of_aggregates:02x}') # 02x 형식 지정
+                    print(f'spare: {p_results.motion_indicator.spare:02x}') # 02x 형식 지정
+                    print(f'motion: {[x for x in p_results.motion_indicator.motion]}')
+                # if DEBUG_LOW_LEVEL_LOGIC_GET_RANGING_DATA:
+                #     print(f"vl53l8cx_get_ranging_data: i+4={i + 4} msize={msize}, len(self.temp_buffer)={len(self.temp_buffer)}")
+                # p_results.update_motion_indicator(self.temp_buffer, i + 4, msize)
+                # print(f'global_indicator_1: {p_results.global_indicator_1:0{8}x}')
+                # print(f'global_indicator_2: {p_results.global_indicator_2:0{8}x}')
+                # print(f'status: {p_results.status:0{8}x}')
+                # print(f'nb_of_detected_aggregates: {p_results.nb_of_detected_aggregates:0{8}x}')
+                # print(f'nb_of_aggregates: {p_results.nb_of_detected_aggregates:0{8}x}')            
+                # print(f'spare: {p_results.nb_of_detected_aggregates:0{8}x}')
+                # print(f'motion: {p_results.motion}')
             i += (msize + 4)
 
         if not self.use_raw_format:
@@ -1155,7 +1198,7 @@ class VL53L8CX:
 
             if not self.disable_motion_indicator:
                 for i in range(32):
-                    p_results.motion[i] /= 65535
+                    p_results.motion_indicator.motion[i] //= 65535
 
         return p_results
 
