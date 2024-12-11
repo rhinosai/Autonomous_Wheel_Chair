@@ -83,7 +83,7 @@ def updatefig(frame, sensor, im, text_objects):
         # Update the text on each cell with the distance value
         for i in range(8):
             for j in range(8):
-                text_objects[i][j].set_text(f"{int(data[i, j])}")
+                text_objects[i][j].set_text(f"{int(flipped_data[i, j])}")
     else: # if get no data show the last data
         print('reinit...')
     
