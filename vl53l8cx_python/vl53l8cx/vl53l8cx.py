@@ -337,7 +337,7 @@ class VL53L8CX:
         self.i2c_address = VL53L8CX_DEFAULT_I2C_ADDRESS
 
         if i2c_bus is None:
-            from smbus2 import SMBus, i2c_msg
+            from smbus3 import SMBus, i2c_msg
             self._i2c_bus = SMBus(bus_id)
             self.i2c_msg = i2c_msg
         else:
