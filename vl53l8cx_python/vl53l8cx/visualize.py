@@ -26,7 +26,7 @@ def updatefig(frame, sensor, im, text_objects):
         
         for i in range(len(distance_values)):
             zone[i] = distance_values[i]['zone']
-            status[i] = distance_values[i]['status']
+            status[i] = distance_values[i]['Status']
             if status[i]==5:
                 distance_value[i] = distance_values[i]['Distance(mm)']
             else:
