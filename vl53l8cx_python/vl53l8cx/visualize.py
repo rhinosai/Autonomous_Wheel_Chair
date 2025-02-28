@@ -13,13 +13,16 @@ from .data_collect import *
 
 
 sensor = TOFSensor(resolution=VL53L8CX_RESOLUTION_8X8)
-
+failure_count = 0
+MAX_FAILURES = 3
 
 
 def updatefig(frame, sensor, im, text_objects):
+    global failure_count
     distance_values = sensor.get_data() # import get_data from data_collect.py
     
     if distance_values:
+        failure_count=0
         distance_value = [0]*64
         zone = [0]*64
         status = [0]*64
@@ -42,10 +45,11 @@ def updatefig(frame, sensor, im, text_objects):
             for j in range(8):
                 text_objects[i][j].set_text(f"{int(flipped_data[i, j])}")
     else: # if get no data show the last data
-        print('Failed to get new data, reinit sensor')
-        sensor._initialize_driver()
-
-
+        failure_count+=1
+        print(f"Failed to get new data : {failure_count}/{MAX_FAILURES}") # tolerance Max_FAILURES times
+        if failure_count>=MAX_FAILURES:
+            print('Failed to get new data, reinit sensor')
+            sensor._initialize_driver()
     
     return [im] + [text for row in text_objects for text in row]
 
