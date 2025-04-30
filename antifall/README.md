@@ -1,9 +1,14 @@
-Fall Detection Beep Node
-This ROS node subscribes to ToF (VL53L8CX) sensor data published by the Raspbot and triggers a beep sound when a fall risk is detected.
+# Anti-Fall Detection System (ROS 2 Package)
 
-Features
-ToF Data Subscription: Subscribes to distance data published by the Raspbot.
+This package, `antifall`, is designed to detect falls using ToF sensor data VL53L8CX. 
+It alerts buzzer when fall is detected.
 
-Beep Alert: Emits a beep sound as a warning.
+---
 
-Fall Risk Detection: Monitors for potential drop-offs or edges and alerts accordingly.
+## 🛠️ How to Run
+
+```bash
+cd ~/antifall
+colcon build
+source install/setup.bash
+ros2 launch antifall antifall_launch.py

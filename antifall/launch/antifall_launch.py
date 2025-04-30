@@ -19,12 +19,8 @@ def generate_launch_description():
         ),
         Node(
             package='antifall',
-            executable='tof_subscriber',
-            name='fall_detector'
+            executable='fall_alert_node',
+            name='fall_alert_node'
         ),
-        Node(
-            package='antifall',
-            executable='beep_node',
-            name='beep_node'
-        ),
+
     ])
